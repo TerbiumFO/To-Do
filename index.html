@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>To-Do List</title>
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <link href="styles.css" rel="stylesheet">
+</head>
+
+<body>
+
+    <div class="container mt-5">
+        <div class="row">
+            <div class="col-12 col-md-3">
+                <div class="card">
+                    <div class="card-body text-center">
+                        <img src="https://www.w3schools.com/howto/img_avatar.png" class="rounded-circle mb-3" alt="User" style="width: 100px">
+                        <h5>Lucas Blue</h5>
+                        <p>Lucas@Blue.com</p>
+                    </div>
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item"><a class="btn btn-light w-100 filter" data-filter="all">All Task</a></li>
+                        <li class="list-group-item"><a class="btn btn-light w-100 filter" data-filter="completed">Completed <span class="badge badge-success">0</span></a></li>
+                        <li class="list-group-item"><a class="btn btn-light w-100 filter" data-filter="pending">Pending <span class="badge badge-danger">0</span></a></li>
+                        <li class="list-group-item"><a class="btn btn-light w-100 filter" data-filter="in-process">In Process <span class="badge badge-primary">0</span></a></li>
+                        <li class="list-group-item"><a class="btn btn-light w-100 filter" data-filter="trash">Trash <span class="badge badge-secondary">0</span></a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="col-12 col-md-9">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="input-group">
+                            <input type="text" id="new-task" class="form-control" placeholder="Enter new task here...">
+                            <div class="input-group-append">
+                                <button class="btn btn-primary" id="add-task">Add Task</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-group" id="task-list">
+                            <!-- Task items will be added here dynamically -->
+                        </ul>
+                        <div id="trash-section" style="display: none;">
+                            <h5 class="mt-4">Trash</h5>
+                            <ul class="list-group" id="trash-list">
+                                <!-- Trashed items will be added here dynamically -->
+                            </ul>
+                            <button class="btn btn-danger mt-3" id="empty-trash">Empty Trash</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('add-task').addEventListener('click', function () {
+            const taskText = document.getElementById('new-task').value;
+            if (taskText.trim()) {
+                addTask(taskText, 'pending');
+                document.getElementById('new-task').value = '';
+            }
+        });
+
+        document.querySelectorAll('.filter').forEach(filterBtn => {
+            filterBtn.addEventListener('click', function () {
+                const filter = this.getAttribute('data-filter');
+                filterTasks(filter);
+            });
+        });
+
+        document.getElementById('empty-trash').addEventListener('click', function () {
+            const trashList = document.getElementById('trash-list');
+            trashList.innerHTML = '';
+            updateCounters();
+        });
+
+        function addTask(taskText, status) {
+            const taskList = document.getElementById('task-list');
+            const listItem = document.createElement('li');
+            listItem.className = `list-group-item task ${status}`;
+            listItem.innerHTML = `
+            <div class="task-container">
+                <span class="${status === 'completed' ? 'completed-task' : ''}">${taskText}</span>
+                <div>
+                    <span class="badge ${status === 'completed' ? 'badge-success' : status === 'in-process' ? 'badge-primary' : 'badge-secondary'}">${status.charAt(0).toUpperCase() + status.slice(1)}</span>
+                    <span class="delete-btn text-danger ml-3">&times;</span>
+                </div>
+            </div>
+        `;
+
+            taskList.appendChild(listItem);
+            updateCounters();
+
+            listItem.querySelector('.delete-btn').addEventListener('click', function () {
+                moveToTrash(listItem);
+            });
+
+            listItem.querySelector('.badge').addEventListener('click', function () {
+                const taskSpan = listItem.querySelector('span');
+                if (this.classList.contains('badge-secondary')) {
+                    this.classList.remove('badge-secondary');
+                    this.classList.add('badge-primary');
+                    this.textContent = 'In Process';
+                    listItem.classList.remove('pending');
+                    listItem.classList.add('in-process');
+                } else if (this.classList.contains('badge-primary')) {
+                    this.classList.remove('badge-primary');
+                    this.classList.add('badge-success');
+                    this.textContent = 'Completed';
+                    listItem.classList.remove('in-process');
+                    listItem.classList.add('completed');
+                    taskSpan.classList.add('completed-task');
+                } else {
+                    this.classList.remove('badge-success');
+                    this.classList.add('badge-secondary');
+                    this.textContent = 'Pending';
+                    listItem.classList.remove('completed');
+                    listItem.classList.add('pending');
+                    taskSpan.classList.remove('completed-task');
+                }
+                updateCounters();
+            });
+        }
+
+        function filterTasks(filter) {
+            const tasks = document.querySelectorAll('.task');
+            const trashSection = document.getElementById('trash-section');
+            trashSection.style.display = filter === 'trash' ? '' : 'none';
+
+            tasks.forEach(task => {
+                if (filter === 'all') {
+                    task.style.display = '';
+                } else if (task.classList.contains(filter)) {
+                    task.style.display = '';
+                } else {
+                    task.style.display = 'none';
+                }
+            });
+        }
+
+        function moveToTrash(task) {
+            const trashList = document.getElementById('trash-list');
+            task.querySelector('.delete-btn').removeEventListener('click', moveToTrash);
+            task.classList.remove('task', 'pending', 'completed', 'in-process');
+            task.classList.add('trashed');
+            trashList.appendChild(task);
+            updateCounters();
+        }
+
+        function updateCounters() {
+            const pendingCount = document.querySelectorAll('.task.pending').length;
+            const completedCount = document.querySelectorAll('.task.completed').length;
+            const inProcessCount = document.querySelectorAll('.task.in-process').length;
+            const trashCount = document.querySelectorAll('.trashed').length;
+
+            document.querySelector('.filter[data-filter="pending"] .badge').textContent = pendingCount;
+            document.querySelector('.filter[data-filter="completed"] .badge').textContent = completedCount;
+            document.querySelector('.filter[data-filter="in-process"] .badge').textContent = inProcessCount;
+            document.querySelector('.filter[data-filter="trash"] .badge').textContent = trashCount;
+        }
+
+        // Sample tasks
+        addTask('Check validation involves making sure all your tags are properly closed and nested.', 'in-process');
+        addTask('Test the outgoing links from all the pages to the specific domain under test.', 'pending');
+        addTask('Test links are used to send emails to admin or other users from web pages.', 'completed');
+        addTask('Options to create forms, if any, form deletes a view or modify the forms.', 'in-process');
+        addTask('Wrong inputs in the forms to the fields in the forms.', 'pending');
+        addTask('Check if the instructions provided are perfect to satisfy its purpose.', 'completed');
+        addTask('Application server and Database server interface.', 'completed');
+
+        updateCounters();
+    </script>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="script.js"></script>
+
+</body>
+
+</html>
